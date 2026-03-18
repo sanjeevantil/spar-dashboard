@@ -1,0 +1,22 @@
+# ── Core Framework ──────────────────────────────
+streamlit>=1.35.0
+
+# ── Charting ─────────────────────────────────────
+plotly>=5.20.0
+
+# ── Data ─────────────────────────────────────────
+pandas>=2.0.0
+numpy>=1.26.0
+
+# ── Google Sheets API ─────────────────────────────
+gspread>=6.1.0
+google-auth>=2.29.0
+google-auth-oauthlib>=1.2.0
+
+# ── PDF Export (optional but recommended) ────────
+weasyprint>=62.0        # Heavy but produces great PDFs
+# Alternative: use reportlab if weasyprint is hard to install
+# reportlab>=4.1.0
+
+# ── Utilities ────────────────────────────────────
+python-dateutil>=2.9.0
