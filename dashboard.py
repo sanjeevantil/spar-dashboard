@@ -12,7 +12,7 @@ import plotly.express as px
 from plotly.subplots import make_subplots
 import gspread
 from google.oauth2.service_account import Credentials
-from datetime import datetime, timedelta
+from datetime import datetime, timezone, timedelta, timedelta
 import time
 import hashlib
 import json
@@ -456,7 +456,7 @@ def login_screen():
                 st.session_state["authenticated"] = True
                 st.session_state["username"]      = username
                 st.session_state["role"]          = USER_ROLES.get(username, "Viewer")
-                st.session_state["login_time"]    = datetime.now().strftime("%d %b %Y, %H:%M")
+                st.session_state["login_time"]    = datetime.now(timezone(timedelta(hours=5,minutes=30))).strftime("%d %b %Y, %H:%M")
                 st.rerun()
             else:
                 st.markdown("""
@@ -930,7 +930,7 @@ def generate_pdf_report(df: pd.DataFrame, kpis: dict) -> bytes:
       .footer {{ margin-top:2rem; font-size:0.75rem; color:#888; text-align:center; }}
     </style></head><body>
     <h1>🏭 Spar Appliancesuring MD Strategic Report</h1>
-    <p><b>Generated:</b> {datetime.now().strftime('%d %B %Y, %H:%M')} &nbsp;|&nbsp;
+    <p><b>Generated:</b> {datetime.now(timezone(timedelta(hours=5,minutes=30))).strftime('%d %B %Y, %H:%M')} &nbsp;|&nbsp;
        <b>Period:</b> {date_from} - {date_to}</p>
 
     <h2>KEY PERFORMANCE INDICATORS</h2>
@@ -1042,7 +1042,7 @@ def render_sidebar(df_raw: pd.DataFrame) -> pd.DataFrame:
             pdf = generate_pdf_report(df, kpis)
             ext  = "pdf" if pdf[:4] == b'%PDF' else "html"
             mime = "application/pdf" if ext == "pdf" else "text/html"
-            st.download_button("💾 Save Report", pdf, f"md_report_{datetime.now().strftime('%Y%m%d_%H%M')}.{ext}", mime)
+            st.download_button("💾 Save Report", pdf, f"md_report_{datetime.now(timezone(timedelta(hours=5,minutes=30))).strftime('%Y%m%d_%H%M')}.{ext}", mime)
 
         # Logout
         st.markdown("---")
@@ -1060,7 +1060,10 @@ def render_alerts(df: pd.DataFrame):
     yield_rate  = (df["Good_Units"].sum() / max(df["Production_Qty"].sum(), 1)) * 100
     total_down  = df["Downtime_Minutes"].sum()
     shortfall_models = df.groupby("Model_Name").apply(
-        lambda x: (x["Production_Qty"].sum() < x["Target_Qty"].sum())
+        lambda x: (
+            x["Target_Qty"].sum() > 0 and
+            (x["Production_Qty"].sum() / x["Target_Qty"].sum()) < 0.20
+        )
     )
     shortfalls = shortfall_models[shortfall_models].index.tolist()
 
