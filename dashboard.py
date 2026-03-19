@@ -976,11 +976,100 @@ def generate_pdf_report(df: pd.DataFrame, kpis: dict) -> bytes:
     </body></html>
     """
     try:
-        import weasyprint
-        pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
-        return pdf_bytes
-    except ImportError:
-        # Fallback: return HTML if weasyprint not available
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import cm
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+        from reportlab.lib.enums import TA_CENTER
+        import io
+
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(buffer, pagesize=A4,
+                                rightMargin=2*cm, leftMargin=2*cm,
+                                topMargin=2*cm, bottomMargin=2*cm)
+        styles = getSampleStyleSheet()
+        story = []
+
+        # Title
+        title_style = ParagraphStyle('Title', parent=styles['Title'],
+                                     fontSize=18, textColor=colors.HexColor('#003d55'),
+                                     spaceAfter=12)
+        story.append(Paragraph("Spar Appliances MD Strategic Report", title_style))
+
+        # Date
+        sub_style = ParagraphStyle('Sub', parent=styles['Normal'],
+                                   fontSize=10, textColor=colors.grey, spaceAfter=20)
+        story.append(Paragraph(
+            f"Generated: {datetime.now(timezone(timedelta(hours=5,minutes=30))).strftime('%d %B %Y, %H:%M')} | Period: {date_from} - {date_to}",
+            sub_style))
+
+        # KPI Section
+        heading_style = ParagraphStyle('Heading', parent=styles['Heading2'],
+                                       fontSize=12, textColor=colors.HexColor('#005577'),
+                                       spaceAfter=8)
+        story.append(Paragraph("KEY PERFORMANCE INDICATORS", heading_style))
+
+        kpi_data = [
+            ['Metric', 'Value'],
+            ['Total Sales Value (FG)',    fmt_currency(kpis.get('sales', 0))],
+            ['Total Production Value',    fmt_currency(kpis.get('prod_value', 0))],
+            ['Yield Rate',               f"{kpis.get('yield', 0):.1f}%"],
+            ['Revenue Lost (CoQ)',        fmt_currency(kpis.get('loss', 0))],
+            ['Total Downtime',           f"{kpis.get('downtime', 0):,} min"],
+            ['Total Units Produced',     f"{kpis.get('units', 0):,}"],
+        ]
+        kpi_table = Table(kpi_data, colWidths=[9*cm, 7*cm])
+        kpi_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#003d55')),
+            ('TEXTCOLOR',  (0,0), (-1,0), colors.white),
+            ('FONTSIZE',   (0,0), (-1,0), 10),
+            ('FONTNAME',   (0,0), (-1,0), 'Helvetica-Bold'),
+            ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#f0f8ff')),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f0f8ff')]),
+            ('GRID',       (0,0), (-1,-1), 0.5, colors.HexColor('#ddeeee')),
+            ('FONTSIZE',   (0,1), (-1,-1), 10),
+            ('PADDING',    (0,0), (-1,-1), 8),
+        ]))
+        story.append(kpi_table)
+        story.append(Spacer(1, 20))
+
+        # Production Table
+        story.append(Paragraph("PRODUCTION DETAIL (Last 20 Records)", heading_style))
+
+        cols_show = ['Date','Model_Name','Production_Qty','Good_Units','Yield_Rate','Sales_Value_FG']
+        tdf = df.tail(20)[cols_show].copy()
+        tdf['Date'] = tdf['Date'].dt.strftime('%d %b %Y')
+        tdf['Yield_Rate'] = tdf['Yield_Rate'].round(1).astype(str) + '%'
+        tdf['Sales_Value_FG'] = tdf['Sales_Value_FG'].apply(fmt_currency)
+
+        prod_data = [['Date', 'Model', 'Prod Qty', 'Good Units', 'Yield', 'Sales']]
+        for _, row in tdf.iterrows():
+            prod_data.append(list(row))
+
+        prod_table = Table(prod_data, colWidths=[2.5*cm, 5*cm, 2.5*cm, 2.5*cm, 2*cm, 3*cm])
+        prod_table.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#003d55')),
+            ('TEXTCOLOR',  (0,0), (-1,0), colors.white),
+            ('FONTNAME',   (0,0), (-1,0), 'Helvetica-Bold'),
+            ('FONTSIZE',   (0,0), (-1,-1), 8),
+            ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor('#f8fbff')]),
+            ('GRID',       (0,0), (-1,-1), 0.4, colors.HexColor('#dde')),
+            ('PADDING',    (0,0), (-1,-1), 5),
+        ]))
+        story.append(prod_table)
+
+        # Footer
+        story.append(Spacer(1, 20))
+        footer_style = ParagraphStyle('Footer', parent=styles['Normal'],
+                                      fontSize=8, textColor=colors.grey,
+                                      alignment=TA_CENTER)
+        story.append(Paragraph("Confidential — MD Strategic Dashboard | Auto-generated Report", footer_style))
+
+        doc.build(story)
+        return buffer.getvalue()
+
+    except Exception as e:
         return html_content.encode("utf-8")
 
 # ─── SIDEBAR ────────────────────────────────────────────────────────────────────

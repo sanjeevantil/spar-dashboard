@@ -20,3 +20,4 @@ weasyprint>=62.0        # Heavy but produces great PDFs
 
 # ── Utilities ────────────────────────────────────
 python-dateutil>=2.9.0
+reportlab
