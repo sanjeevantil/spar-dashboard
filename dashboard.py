@@ -974,6 +974,7 @@ def render_sidebar(df_raw: pd.DataFrame) -> pd.DataFrame:
           <div style="font-size:1rem;font-weight:600;color:#00d4ff;margin-top:0.2rem;">
             👤 {st.session_state.get('username','')}</div>
           <div style="font-size:0.72rem;color:#a78bfa;">{st.session_state.get('role','')}</div>
+          <div style="font-size:0.72rem;color:#00d4ff;margin-top:0.2rem;">MD: Mr. Abhimanyu Dua</div>
           <div style="font-size:0.68rem;color:#556677;margin-top:0.3rem;">
             Since {st.session_state.get('login_time','')}</div>
         </div>
