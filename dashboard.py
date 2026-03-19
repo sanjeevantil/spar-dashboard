@@ -416,12 +416,12 @@ def load_users_from_sheet():
             "md_admin": hashlib.sha256("Admin@2024!".encode()).hexdigest(),
         }, {"md_admin": "MD / Director"}
 
+USERS_SHEET_ID   = "1_ucYa-nV23ZIajEpmLBf7_I91S72ohV1DYwIc_uqdyo"
 USERS, USER_ROLES = load_users_from_sheet()
 
 # ─── GOOGLE SHEET CONFIG ────────────────────────────────────────────────────────
 # ✅ Replace these with your actual values
 SPREADSHEET_ID   = "1W3Du4mxVPkxSaKdgr-BzeFoN_kamiZaBF3oM47GcB8U"
-USERS_SHEET_ID   = "1_ucYa-nV23ZIajEpmLBf7_I91S72ohV1DYwIc_uqdyo"
 CURRENT_SHEET    = "Production_Data"
 ARCHIVE_SHEETS   = ["Archive_Prod_Feb_2026"]
 PLAN_SHEET       = "Plan_Data"
@@ -443,7 +443,8 @@ def hash_password(pw: str) -> str:
     return hashlib.sha256(pw.encode()).hexdigest()
 
 def authenticate(username: str, password: str) -> bool:
-    return USERS.get(username) == hash_password(password)
+    users, _ = load_users_from_sheet()
+    return users.get(username) == hash_password(password)
 
 def login_screen():
     """Renders the professional login UI."""
