@@ -390,8 +390,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ─── CREDENTIALS CONFIG ─────────────────────────────────────────────────────────
+@st.cache_data(ttl=60)
 def load_users_from_sheet():
-    """Users sheet se login credentials load karo."""
+    """Users sheet se login credentials load karo — har 1 minute mein refresh."""
     try:
         client = get_gspread_client()
         if client is None:
