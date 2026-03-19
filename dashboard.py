@@ -650,9 +650,9 @@ def _clean_dataframe(prod_df: pd.DataFrame, plan_df: pd.DataFrame, repair_df: pd
         prod_df["Downtime_Minutes"]     = 0
         prod_df["Downtime_Reason"]      = "None"
 
-    # ── Step 1: SO level summary (Rejection from Repair sheet) ──
-    so_summary = prod_df.groupby(
-        ["SO Number", "Model_Name", "Unit_Price", "Target_Qty"]
+    # ── Step 1: Date + SO level aggregation ──
+    grp = prod_df.groupby(
+        ["Date", "SO Number", "Model_Name", "Shift", "Unit_Price"]
     ).agg(
         Production_Qty   = ("Is_Pass", "count"),
         Good_Units       = ("Is_Pass", "sum"),
@@ -660,13 +660,12 @@ def _clean_dataframe(prod_df: pd.DataFrame, plan_df: pd.DataFrame, repair_df: pd
         Downtime_Minutes = ("Downtime_Minutes", "sum"),
     ).reset_index()
 
-    so_summary["Downtime_Reason"] = so_summary["Downtime_Minutes"].apply(
+    grp["Downtime_Reason"] = grp["Downtime_Minutes"].apply(
         lambda x: "None" if x == 0 else "Repair/Rework")
-    so_summary["Shift"] = "Day"
 
-    # Use latest date per SO for Date column
-    so_dates = prod_df.groupby("SO Number")["Date"].max().reset_index()
-    grp = so_summary.merge(so_dates, on="SO Number", how="left")
+    # Target_Qty — SO total, daily repeat avoid karne ke liye SO total production se compare
+    so_target = prod_df.groupby("SO Number")["Target_Qty"].first().reset_index()
+    grp = grp.merge(so_target, on="SO Number", how="left")
 
     # ── Final KPI Columns ──
     grp["Sales_Value_FG"]   = grp["Good_Units"]   * grp["Unit_Price"]
@@ -1007,7 +1006,11 @@ def render_sidebar(df_raw: pd.DataFrame) -> pd.DataFrame:
 
         # Archive toggle
         st.markdown('<div class="sidebar-section">📁 Data Source</div>', unsafe_allow_html=True)
-        include_archives = st.toggle("Include Historical Archives", value=False)
+        prev_arch = st.session_state.get("inc_arch", True)
+        include_archives = st.toggle("Include Historical Archives", value=True)
+        # Toggle change hone pe model filter reset karo
+        if include_archives != prev_arch:
+            st.session_state["model_filter_reset"] = True
 
         # Date range
         st.markdown('<div class="sidebar-section">📅 Date Range</div>', unsafe_allow_html=True)
@@ -1024,6 +1027,8 @@ def render_sidebar(df_raw: pd.DataFrame) -> pd.DataFrame:
         # Model filter
         st.markdown('<div class="sidebar-section">🏷️ Model</div>', unsafe_allow_html=True)
         all_models = sorted(df_raw["Model_Name"].dropna().unique()) if not df_raw.empty else []
+        # Reset model filter jab archive toggle change ho
+        reset = st.session_state.pop("model_filter_reset", False)
         sel_models = st.multiselect("Models", all_models, default=all_models)
 
         # Shift filter
@@ -1075,13 +1080,16 @@ def render_alerts(df: pd.DataFrame):
         return
     yield_rate  = (df["Good_Units"].sum() / max(df["Production_Qty"].sum(), 1)) * 100
     total_down  = df["Downtime_Minutes"].sum()
-    shortfall_models = df.groupby("Model_Name").apply(
-        lambda x: (
-            x["Target_Qty"].sum() > 0 and
-            (x["Production_Qty"].sum() / x["Target_Qty"].sum()) < 0.20
-        )
-    )
-    shortfalls = shortfall_models[shortfall_models].index.tolist()
+    # Target per SO sirf ek baar — shortfall sahi calculate karo
+    so_target = df.groupby("SO Number")["Target_Qty"].first().reset_index()
+    so_prod   = df.groupby("SO Number")["Production_Qty"].sum().reset_index()
+    so_model  = df.groupby("SO Number")["Model_Name"].first().reset_index()
+    so_summary = so_prod.merge(so_target, on="SO Number").merge(so_model, on="SO Number")
+    shortfall_df = so_summary[
+        (so_summary["Target_Qty"] > 0) &
+        (so_summary["Production_Qty"] / so_summary["Target_Qty"] < 0.20)
+    ]
+    shortfalls = shortfall_df["Model_Name"].tolist()
 
     alert_shown = False
     if yield_rate < 90:
@@ -1162,8 +1170,13 @@ def render_dashboard():
 
     # ── Load Data ──
     is_live = SPREADSHEET_ID != "YOUR_SPREADSHEET_ID_HERE"
+
+    # Pehle archives toggle check karo session_state se
+    inc_arch = st.session_state.get("inc_arch", True)
+
     if is_live:
-        df_raw = fetch_all_data(include_archives=False)
+        # Archives state ke hisaab se data load karo PEHLE
+        df_raw = fetch_all_data(include_archives=inc_arch)
         if df_raw.empty:
             st.warning("⚠️ Live sheet returned no data. Falling back to demo data.")
             df_raw = generate_demo_data()
@@ -1173,11 +1186,12 @@ def render_dashboard():
         df_raw = generate_demo_data()
         st.sidebar.info("ℹ️ Demo mode — Set SPREADSHEET_ID to connect live Spar Appliances sheet.")
 
-    # ── Sidebar Filters ──
+    # Sidebar render karo loaded data ke saath
     df, include_archives = render_sidebar(df_raw)
-    if include_archives and is_live:
-        df_raw = fetch_all_data(include_archives=True)
-        df = df_raw.copy()
+    # Toggle change hone pe session_state update karo — next run mein sahi data aayega
+    if include_archives != inc_arch:
+        st.session_state["inc_arch"] = include_archives
+        st.rerun()
 
     if df.empty:
         st.error("No data available for the selected filters.")
@@ -1192,7 +1206,8 @@ def render_dashboard():
     total_rej       = int(df["Rejection_Qty"].sum())
     yield_rate      = (good_units / max(total_units, 1)) * 100
     total_downtime  = int(df["Downtime_Minutes"].sum())
-    total_target    = int(df["Target_Qty"].sum())
+    # Target per SO sirf ek baar count karo
+    total_target    = int(df.groupby("SO Number")["Target_Qty"].first().sum())
     overall_var     = total_units - total_target
     var_pct         = (overall_var / max(total_target, 1)) * 100
 
