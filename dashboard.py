@@ -391,6 +391,7 @@ st.markdown("""
 
 # ─── CREDENTIALS CONFIG ─────────────────────────────────────────────────────────
 @st.cache_data(ttl=60)
+USERS_SHEET_ID   = "1_ucYa-nV23ZIajEpmLBf7_I91S72ohV1DYwIc_uqdyo"
 def load_users_from_sheet():
     """Users sheet se login credentials load karo — har 1 minute mein refresh."""
     try:
@@ -416,7 +417,6 @@ def load_users_from_sheet():
             "md_admin": hashlib.sha256("Admin@2024!".encode()).hexdigest(),
         }, {"md_admin": "MD / Director"}
 
-USERS_SHEET_ID   = "1_ucYa-nV23ZIajEpmLBf7_I91S72ohV1DYwIc_uqdyo"
 USERS, USER_ROLES = load_users_from_sheet()
 
 # ─── GOOGLE SHEET CONFIG ────────────────────────────────────────────────────────
