@@ -397,7 +397,7 @@ def load_users_from_sheet():
         client = get_gspread_client()
         if client is None:
             raise Exception("No client")
-        sheet = client.open_by_key(USERS_SHEET_ID).worksheet("Sheet1")
+        sheet = client.open_by_key(USERS_SHEET_ID).worksheet("Users")
         data = sheet.get_all_values()
         if not data or len(data) < 2:
             raise Exception("Empty")
