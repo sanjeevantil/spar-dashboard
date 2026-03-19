@@ -390,7 +390,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ─── CREDENTIALS CONFIG ─────────────────────────────────────────────────────────
-@st.cache_data(ttl=60)
 USERS_SHEET_ID   = "1_ucYa-nV23ZIajEpmLBf7_I91S72ohV1DYwIc_uqdyo"
 def load_users_from_sheet():
     """Users sheet se login credentials load karo — har 1 minute mein refresh."""
