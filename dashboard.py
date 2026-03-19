@@ -396,7 +396,7 @@ def load_users_from_sheet():
         client = get_gspread_client()
         if client is None:
             raise Exception("No client")
-        sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Users")
+        sheet = client.open_by_key(USERS_SHEET_ID).worksheet("Sheet1")
         data = sheet.get_all_values()
         if not data or len(data) < 2:
             raise Exception("Empty")
@@ -420,6 +420,7 @@ USERS, USER_ROLES = load_users_from_sheet()
 # ─── GOOGLE SHEET CONFIG ────────────────────────────────────────────────────────
 # ✅ Replace these with your actual values
 SPREADSHEET_ID   = "1W3Du4mxVPkxSaKdgr-BzeFoN_kamiZaBF3oM47GcB8U"
+USERS_SHEET_ID   = "1_ucYa-nV23ZIajEpmLBf7_I91S72ohV1DYwIc_uqdyo"
 CURRENT_SHEET    = "Production_Data"
 ARCHIVE_SHEETS   = ["Archive_Prod_Feb_2026"]
 PLAN_SHEET       = "Plan_Data"
