@@ -390,18 +390,32 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ─── CREDENTIALS CONFIG ─────────────────────────────────────────────────────────
-# ✅ EDIT THESE — Plaintext here for simplicity; use st.secrets in production
-USERS = {
-    "md_admin":   hashlib.sha256("Admin@2024!".encode()).hexdigest(),
-    "production": hashlib.sha256("Prod@2024!".encode()).hexdigest(),
-    "analyst":    hashlib.sha256("Analyst@2024!".encode()).hexdigest(),
-}
+def load_users_from_sheet():
+    """Users sheet se login credentials load karo."""
+    try:
+        client = get_gspread_client()
+        if client is None:
+            raise Exception("No client")
+        sheet = client.open_by_key(SPREADSHEET_ID).worksheet("Users")
+        data = sheet.get_all_values()
+        if not data or len(data) < 2:
+            raise Exception("Empty")
+        users = {}
+        roles = {}
+        for row in data[1:]:
+            if len(row) >= 3 and row[0].strip():
+                username = row[0].strip()
+                password = row[1].strip()
+                role     = row[2].strip()
+                users[username] = hashlib.sha256(password.encode()).hexdigest()
+                roles[username] = role
+        return users, roles
+    except Exception:
+        return {
+            "md_admin": hashlib.sha256("Admin@2024!".encode()).hexdigest(),
+        }, {"md_admin": "MD / Director"}
 
-USER_ROLES = {
-    "md_admin":   "MD / Director",
-    "production": "Production Manager",
-    "analyst":    "Data Analyst",
-}
+USERS, USER_ROLES = load_users_from_sheet()
 
 # ─── GOOGLE SHEET CONFIG ────────────────────────────────────────────────────────
 # ✅ Replace these with your actual values
