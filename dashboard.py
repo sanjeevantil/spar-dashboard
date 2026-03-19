@@ -795,7 +795,12 @@ def chart_treemap(df: pd.DataFrame) -> go.Figure:
     return fig
 
 def chart_variance_bar(df: pd.DataFrame) -> go.Figure:
-    grp = df.groupby("Model_Name").agg(
+    # Target per SO sirf ek baar count karo
+    so_target = df.groupby("SO Number")["Target_Qty"].first().reset_index()
+    so_model  = df.groupby("SO Number")["Model_Name"].first().reset_index()
+    so_actual = df.groupby("SO Number")["Production_Qty"].sum().reset_index()
+    merged = so_actual.merge(so_target, on="SO Number").merge(so_model, on="SO Number")
+    grp = merged.groupby("Model_Name").agg(
         Actual=("Production_Qty", "sum"),
         Target=("Target_Qty", "sum"),
     ).reset_index()
