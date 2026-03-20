@@ -1158,7 +1158,7 @@ def render_dashboard():
 
 
     # ── Top Bar ──
-    now = datetime.now()
+    now = datetime.now(timezone(timedelta(hours=5,minutes=30)))
     st.markdown(f"""
     <div class="topbar">
       <div>
