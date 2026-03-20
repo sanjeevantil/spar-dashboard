@@ -66,6 +66,23 @@ st.markdown("""
 
   /* ── Hide Default Header ── */
   #MainMenu, footer, header { visibility: hidden; }
+  /* Fix keyboard_double icon */
+  [data-testid="collapsedControl"] span {
+    font-size: 0 !important;
+  }
+  [data-testid="collapsedControl"]::after {
+    content: "›" !important;
+    font-size: 22px !important;
+    color: #00d4ff !important;
+  }
+  /* Mobile sidebar */
+  @media (max-width: 768px) {
+    section[data-testid="stSidebar"] {
+      width: 100% !important;
+      min-width: unset !important;
+      max-width: unset !important;
+    }
+  }
 
   /* Hide Streamlit default UI elements */
   [data-testid="stToolbar"],
