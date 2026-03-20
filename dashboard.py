@@ -67,88 +67,12 @@ st.markdown("""
   /* ── Hide Default Header ── */
   #MainMenu, footer, header { visibility: hidden; }
 
-  /* Hide keyboard_double_arrow tooltip */
-  .st-emotion-cache-fix, 
+  /* Hide Streamlit default UI elements */
   [data-testid="stToolbar"],
   [data-testid="stDecoration"],
-  [data-testid="stStatusWidget"],
-  div[class*="StatusWidget"],
-  div[class*="toolbar"],
-  .viewerBadge_container__1QSob,
-  #MainMenu { display: none !important; visibility: hidden !important; }
+  [data-testid="stStatusWidget"] { display: none !important; }
 
-  /* Hide keyboard_double_arrow tooltip */
-  [data-testid="stToolbar"],
-  [data-testid="stDecoration"],
-  [data-testid="stStatusWidget"],
-  div[class*="StatusWidget"],
-  div[class*="toolbar"] { display: none !important; visibility: hidden !important; }
-
-  /* Hide ALL sidebar toggle buttons - clean single rule */
-  [data-testid="collapsedControl"],
-  [data-testid="collapsedControl"] *,
-  [data-testid="baseButton-headerNoPadding"],
-  button[kind="header"] {
-    display: none !important;
-    width: 0 !important;
-    height: 0 !important;
-  }
-
-  /* Always keep sidebar open - hide collapse/expand buttons */
-  [data-testid="collapsedControl"] { display: none !important; }
-  [data-testid="baseButton-headerNoPadding"] { display: none !important; }
-  button[title="Close sidebar"] { display: none !important; }
-  
-  /* Sidebar always visible */
-  section[data-testid="stSidebar"] {
-    display: flex !important;
-    visibility: visible !important;
-    transform: none !important;
-    min-width: 280px !important;
-    max-width: 320px !important;
-  }
-  [data-testid="collapsedControl"] svg {
-    fill: #000 !important;
-    width: 16px !important;
-    height: 16px !important;
-  }
-  [data-testid="collapsedControl"]:hover {
-    background: #00ffee !important;
-    width: 34px !important;
-  }
-
-  /* ── Sidebar Arrow Button Fix ── */
-  div[data-testid="collapsedControl"],
-  button[data-testid="collapsedControl"],
-  [data-testid="collapsedControl"] {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    z-index: 9999 !important;
-    background: #00d4ff !important;
-    border-radius: 0 8px 8px 0 !important;
-    position: fixed !important;
-    left: 0 !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    width: 24px !important;
-    height: 60px !important;
-    align-items: center !important;
-    justify-content: center !important;
-    cursor: pointer !important;
-    border: none !important;
-  }
-  [data-testid="collapsedControl"] svg {
-    fill: #000 !important;
-    color: #000 !important;
-  }
-  
-  
-
-  
-  button
-
-  /* ── Top Nav Bar ── */
+    /* ── Top Nav Bar ── */
   .topbar {
     background: linear-gradient(90deg, #0d1526 0%, #111827 50%, #0d1526 100%);
     border-bottom: 1px solid var(--border);
@@ -509,7 +433,7 @@ def get_gspread_client():
         st.error(f"❌ Google Sheets auth failed: {e}")
         return None
 
-@st.cache_data(ttl=600)   # ← 10-minute TTL cache
+@st.cache_data(ttl=120)   # ← 10-minute TTL cache
 def fetch_sheet_data(sheet_name: str) -> pd.DataFrame:
     """Fetches a single sheet and returns a raw DataFrame (no cleaning)."""
     try:
@@ -544,7 +468,7 @@ def fetch_sheet_data(sheet_name: str) -> pd.DataFrame:
         st.warning(f"⚠️ Could not load sheet '{sheet_name}': {e}")
         return pd.DataFrame()
 
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=120)
 def fetch_all_data(include_archives: bool = False) -> pd.DataFrame:
     """Fetches and merges Production_Data + Plan_Data + Repairing_Testing."""
     # Fetch production data
@@ -677,7 +601,7 @@ def _clean_dataframe(prod_df: pd.DataFrame, plan_df: pd.DataFrame, repair_df: pd
     return grp
 
 # ─── DEMO DATA GENERATOR ────────────────────────────────────────────────────────
-@st.cache_data(ttl=600)
+@st.cache_data(ttl=120)
 def generate_demo_data() -> pd.DataFrame:
     """
     Fallback demo data when Google Sheets is not yet configured.
@@ -1231,17 +1155,7 @@ def render_alerts(df: pd.DataFrame):
 
 # ─── MAIN DASHBOARD ─────────────────────────────────────────────────────────────
 def render_dashboard():
-    # ── Load Material Icons Font ──
-    st.markdown("""
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <style>
-    .material-icons, [data-testid="collapsedControl"] * {
-        font-family: 'Material Icons' !important;
-        font-feature-settings: 'liga';
-        -webkit-font-feature-settings: 'liga';
-    }
-    </style>
-    """, unsafe_allow_html=True)
+
 
     # ── Top Bar ──
     now = datetime.now()
